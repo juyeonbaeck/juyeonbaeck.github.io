@@ -7,7 +7,7 @@ pin: false
 math: true
 mermaid: true
 image:
-  path: /assets/post-img/defaultImg.jpg
+  path: /assets/post-img/defaultImg.gif
   alt: 이미지 설명
 ---
 
