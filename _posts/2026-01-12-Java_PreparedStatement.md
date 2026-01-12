@@ -59,8 +59,7 @@ Conncetion con = null;
 
 - 주의: 연결을 유지하는 데 자원이 많이 소모되므로, 작업이 끝나면 반드시 .close()로 끊어줘야 함
 
-![Connection](http://juyeonbaeck.github.io/assets/iimg/2026-01-12/Java_PreparedStatement_1.png)
-
+![Connection](http://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png)
 
 2. **Statement** (운반 트럭)
 - 역할: 연결된 통로(Connection)를 통해 SQL 문(쿼리)을 DB에 전달하고, 실행 결과를 받아오는 객체
@@ -92,7 +91,9 @@ Conncetion con = null;
 - 단점 2 (보안)
     SQL 인젝션(SQL Injection) 공격에 취약 (해커가 입력값에 SQL 명령어를 섞으면 그대로 실행됨)
 
-```java:StatementDAO.java
+```java
+StatementDAO.java
+
 String name = "SCOTT";
 // 문자열 결합 연산(+)으로 인해 가독성이 떨어지고, 작은따옴표(') 누락 실수가 잦음
 String sql = "SELECT * FROM emp WHERE ename = '" + name + "'"; 
@@ -107,7 +108,8 @@ rs = stmt.executeQuery(sql);
 - 장점 2 (보안): 입력값을 단순 문자로 취급하므로, SQL 인젝션을 원천 차단
 - 장점 3 (성능): 동일한 쿼리는 미리 컴파일된 것을 재사용하므로 속도가 빠름
 
-```java:PreparedStatementDAO.java
+```java
+PreparedStatementDAO.java
 String name = "SCOTT";
 // 1. SQL 작성: 값이 들어갈 자리를 물음표(?)인 'Placeholder'로 비워둠
 String sql = "SELECT * FROM emp WHERE ename = ?"; 
@@ -138,7 +140,8 @@ rs = pstmt.executeQuery();
 
 ## 5. 객체 활용 예시 코드
 
-```java:DeptDTO.java
+```java
+DeptDTO.java
 // DeptDTO.java
 // Dept(부서)의 정보를 담고있는 DB 구조
 
@@ -175,7 +178,8 @@ public DeptDTO(int deptno, String dname, String loc) {
 
 ```
 
-```java:DeptDAO.java
+```java
+DeptDAO.java
 package model.dao;
 
 
@@ -207,3 +211,4 @@ public class DeptDAO {
 > [!INFO]
 > **Change Log**
 > - 2026-01-12: 최초 작성
+> - 2026-01-12: 코드 수정
