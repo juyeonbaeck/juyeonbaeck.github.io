@@ -33,20 +33,20 @@ JDBC 라는 API의 핵심 객체 세가지 (Connection, Statement, ResultSet) �
 Statement와 PreparedStatement의 차이에 대해서 알아본다.
 그리고 해당 세가지 객체를 활용하여 실제 DB에 연결하는 코드를 작성해본다.
 
+---
+## **1. JDBC 란?**
+### 1-1. JDBC (Java Database Connectivity) 정의 : API
+- java 프로그램이 DB(oracle, mysql 등)와 연결하여 데이터를 주고 받을 수 있도록 해주는 **자바 표준 API**
 
-## 1. JDBC 란? - Java Database Connectivity
-java 프로그램이 DB(oracle, mysql 등)와 연결하여 데이터를 주고 받을 수 있도록 해주는 **자바 표준 API**
+### 1-2. 특징 : DB 독립성
+- 개발자는 JDBC 표준 사용법만 익히면, 오라클이든 MySQL이든 DB 종류에 상관없이 똑같은 자바 코드로 연결할 수 있음 (각 DB에 맞는 드라이버만 갈아 끼우면 됨)
 
-- 특징: _DB 독립성_
-    개발자는 JDBC 표준 사용법만 익히면, 오라클이든 MySQL이든 DB 종류에 상관없이 똑같은 자바 코드로 연결할 수 있음 (각 DB에 맞는 드라이버만 갈아 끼우면 됨)
+### 1-3. 역할 : 다리(Bridge)
+"자바 애플리케이션"-- "데이터베이스" 사이의 다리(Bridge) 역할
 
-- 역할: "자바 애플리케이션"과 "데이터베이스" 사이의 다리(Bridge) 역할
-
-장점: 데이터베이스 관리의 편의
-
-## 2. JDBC 핵심 객체 3개 - `Connection`, `Statement`, `ResultSet`
-
-1. **Connection** (연결 통로)
+---
+## 2. JDBC 핵심 객체
+### 2-1. - **Connection** (연결 통로)
 - 역할: `DB 서버`와 `자바 프로그램` 사이의 물리적인 연결(Session)을 맺는 객체
 
 ```java
@@ -62,27 +62,23 @@ Conncetion con = null;
 
 ![Connection Code in eclipse](https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png)
 
-2. **Statement** (운반 트럭)
+### 2-2. **Statement** (운반 트럭)
 - 역할: 연결된 통로(Connection)를 통해 SQL 문(쿼리)을 DB에 전달하고, 실행 결과를 받아오는 객체
-
 - 비유: 주문서(SQL)를 싣고 주방(DB)으로 달리는 **"트럭"**
-
 - 종류:
     - **Statement**: 일반 트럭 (완성된 SQL을 그대로 운반, 보안 취약)
     - **PreparedStatement**: 보안 트럭 (SQL 틀을 미리 준비하고 값만 실어 나름, 권장 👍)
 
 
-3. **ResultSet** (결과 상자)
+### 2-3. **ResultSet** (결과 상자)
 - 역할: SELECT 문을 실행했을 때, DB로부터 찾아온 **데이터 결과표(Table)**를 담고 있는 객체
-
 - 비유: 주방(DB)에서 요리가 완료되어 나온 **"음식 쟁반"**
-
 - 특징:
     - **커서(Cursor)**라는 것을 사용하여 데이터의 행(Row)을 하나씩 가리킴
     - .next() 메소드를 호출할 때마다 커서가 다음 줄로 이동하며 데이터를 읽음
     - (INSERT, UPDATE, DELETE는 결과가 데이터가 아니라 '몇 개 바뀌었는지' 숫자(int)로 나오므로 ResultSet을 쓰지 않음 ! => **SELECT에 사용**!)
 
-
+---
 ## 3. `Statement` 와 `PreparedStatement` 차이
 1. 기존 방식인 `Statement` 
 : 완성된 SQL 문자열을 통째로 DB에 전송
@@ -109,7 +105,6 @@ rs = stmt.executeQuery(sql);
 - 장점 3 (성능): 동일한 쿼리는 미리 컴파일된 것을 재사용하므로 속도가 빠름
 
 ```java
-PreparedStatementDAO.java
 String name = "SCOTT";
 // 1. SQL 작성: 값이 들어갈 자리를 물음표(?)인 'Placeholder'로 비워둠
 String sql = "SELECT * FROM emp WHERE ename = ?"; 
@@ -124,8 +119,9 @@ pstmt.setString(1, name);
 // 4. 실행: 이미 준비된 쿼리를 실행 (괄호 안에 sql을 넣지 않음)
 rs = pstmt.executeQuery();
 ```
+{: file="PreparedStatementDAO.java" }
 
-
+---
 ## 4. DAO 란? - Data Access Object
 : 데이터베이스에 접근하여 데이터를 조회하거나 조작(CRUD)하는 기능을 전담하는 **객체**
 - 목적: 메인 비즈니스 로직(Controller)과 지저분한 SQL 처리 로직을 분리하기 위해 사용
