@@ -49,9 +49,10 @@ java 프로그램이 DB(oracle, mysql 등)와 연결하여 데이터를 주고 �
 1. **Connection** (연결 통로)
 - 역할: `DB 서버`와 `자바 프로그램` 사이의 물리적인 연결(Session)을 맺는 객체
 
-```java: Connection.java
+```java
 Conncetion con = null;
 ```
+{: file="Connection.java" }
 
 - 비유: 전화를 걸어서 상대방(DB)과 **"통화가 연결된 상태"**
 
@@ -92,14 +93,13 @@ Conncetion con = null;
     SQL 인젝션(SQL Injection) 공격에 취약 (해커가 입력값에 SQL 명령어를 섞으면 그대로 실행됨)
 
 ```java
-StatementDAO.java
-
 String name = "SCOTT";
 // 문자열 결합 연산(+)으로 인해 가독성이 떨어지고, 작은따옴표(') 누락 실수가 잦음
 String sql = "SELECT * FROM emp WHERE ename = '" + name + "'"; 
 stmt = con.createStatement();
 rs = stmt.executeQuery(sql);
 ```
+{: file="StatementDAO.java" }
 
 2. 개선된 방식인 `PreparedStatement`
 : SQL 문장의 틀(골격)을 먼저 컴파일해두고, 실행 시에 **값(Value)**만 바꿔 끼워 넣는 방식
@@ -141,7 +141,6 @@ rs = pstmt.executeQuery();
 ## 5. 객체 활용 예시 코드
 
 ```java
-DeptDTO.java
 // DeptDTO.java
 // Dept(부서)의 정보를 담고있는 DB 구조
 
@@ -175,11 +174,11 @@ public DeptDTO(int deptno, String dname, String loc) {
 @AllArgsConstructor //
 @NoArgsConstructor  //
 @ToString           //
-
 ```
+{: file="DeptDTO.java" }
+
 
 ```java
-DeptDAO.java
 package model.dao;
 
 
@@ -207,8 +206,10 @@ public class DeptDAO {
     }
 }
 ```
+{: file="DeptDAO.java" }
 
 > [!INFO]
 > **Change Log**
 > - 2026-01-12: 최초 작성
 > - 2026-01-12: 코드 수정
+{: .prompt-info }
