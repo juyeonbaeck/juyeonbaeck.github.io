@@ -60,7 +60,7 @@ Conncetion con = null;
 
 - 주의: 연결을 유지하는 데 자원이 많이 소모되므로, 작업이 끝나면 반드시 .close()로 끊어줘야 함
 
-![Connection](http://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png)
+![Connection Code in eclipse](https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png)
 
 2. **Statement** (운반 트럭)
 - 역할: 연결된 통로(Connection)를 통해 SQL 문(쿼리)을 DB에 전달하고, 실행 결과를 받아오는 객체
