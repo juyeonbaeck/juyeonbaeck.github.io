@@ -59,10 +59,10 @@ Conncetion con = null;
 - 생성: DriverManager.getConnection(url, id, pw) 메소드로 얻어옴.
 
 - 주의: 연결을 유지하는 데 자원이 많이 소모되므로, 작업이 끝나면 반드시 .close()로 끊어줘야 함
-
-<img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png" width="49%" alt="코드 안에 직접 작성" />
-<img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_2.png" width="49%" alt="properties 활용" />
-
+<div style="display: flex; justify-content: space-between; gap: 10px;">
+    <img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png" width="49%" alt="코드 안에 직접 작성" />
+    <img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_2.png" width="49%" alt="properties 활용" />
+</div>
 
 ### 2-2. **Statement** (운반 트럭)
 - 역할: 연결된 통로(Connection)를 통해 SQL 문(쿼리)을 DB에 전달하고, 실행 결과를 받아오는 객체
