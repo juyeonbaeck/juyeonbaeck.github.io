@@ -42,7 +42,7 @@ Statement와 PreparedStatement의 차이에 대해서 알아본다.
 - 개발자는 JDBC 표준 사용법만 익히면, 오라클이든 MySQL이든 DB 종류에 상관없이 똑같은 자바 코드로 연결할 수 있음 (각 DB에 맞는 드라이버만 갈아 끼우면 됨)
 
 ### 1-3. 역할 : 다리(Bridge)
-"자바 애플리케이션"-- "데이터베이스" 사이의 다리(Bridge) 역할
+"자바 애플리케이션" -- "데이터베이스" 사이의 다리 역할
 
 ---
 ## 2. JDBC 핵심 객체
@@ -60,7 +60,9 @@ Conncetion con = null;
 
 - 주의: 연결을 유지하는 데 자원이 많이 소모되므로, 작업이 끝나면 반드시 .close()로 끊어줘야 함
 
-![Connection Code in eclipse](https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png)
+<img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png" width="49%" />
+<img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_2.png" width="49%" />
+
 
 ### 2-2. **Statement** (운반 트럭)
 - 역할: 연결된 통로(Connection)를 통해 SQL 문(쿼리)을 DB에 전달하고, 실행 결과를 받아오는 객체
