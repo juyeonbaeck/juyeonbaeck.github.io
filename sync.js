@@ -1,4 +1,4 @@
-// sync.js (최종 완성: AI 1.5-flash 적용 + 제목 기반 Slug)
+// sync.js (호환성 끝판왕 버전: gemini-pro 사용)
 const { Client } = require("@notionhq/client");
 const { NotionToMarkdown } = require("notion-to-md");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -17,7 +17,8 @@ const notion = new Client({ auth: NOTION_KEY });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-const IMAGE_DIR = "assets/post-img/posts";
+// [이미지 경로] Chirpy 테마 표준
+const IMAGE_DIR = "assets/img/posts";
 
 async function downloadImage(url, filename) {
   const filepath = path.resolve(__dirname, IMAGE_DIR, filename);
@@ -31,20 +32,21 @@ async function downloadImage(url, filename) {
   });
 }
 
-// [수정] AI 모델 변경 (gemini-1.5-flash)
+// [핵심 변경] 모델을 'gemini-pro'로 변경 (404 오류 해결)
 async function getAiMetadata(content, title) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // 1.5-flash 대신 가장 안정적인 gemini-pro 사용
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     const prompt = `
       You are an SEO expert. 
-      Task: Create a URL slug and a summary based on the content below.
+      Task: Create a URL slug and a summary.
       
-      1. Slug: Translate the title "${title}" into English if needed. Use lowercase, hyphens only. No special chars. (e.g., "why-python-is-interpreted")
+      1. Slug: Convert the title "${title}" into a concise English URL slug. Lowercase, hyphens only. (e.g., "why-python-is-interpreted")
       2. Summary: 2-sentence summary in Korean.
 
       Output JSON ONLY:
-      { "slug": "english-slug-here", "summary": "한국어 요약" }
+      { "slug": "slug-here", "summary": "summary-here" }
 
       Content: ${content.substring(0, 1000)}
     `;
@@ -55,7 +57,7 @@ async function getAiMetadata(content, title) {
     const jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
     return JSON.parse(jsonString);
   } catch (error) {
-    console.error(`🤖 AI 생성 실패: ${error.message}`);
+    console.error(`🤖 AI 생성 실패 (gemini-pro): ${error.message}`);
     return null;
   }
 }
@@ -95,9 +97,9 @@ async function main() {
       const mdBlocks = await n2m.pageToMarkdown(pageId);
       let mdString = n2m.toMarkdownString(mdBlocks).parent;
 
-      // [AI] Slug/Summary 생성
+      // [AI] 자동 생성 시도
       if (!slug || !summary) {
-        console.log("🤖 AI가 Slug와 Summary 생성 시도 (Model: gemini-1.5-flash)...");
+        console.log("🤖 AI가 내용을 분석 중입니다 (Model: gemini-pro)...");
         const aiResult = await getAiMetadata(mdString, title);
         
         if (aiResult) {
@@ -118,18 +120,14 @@ async function main() {
         }
       }
 
-      // [수정] AI 실패 시 "제목" 기반으로 Slug 생성 (숫자 X)
+      // [비상 대책] AI 실패 시 제목으로 Slug 생성
       if (!slug) {
-        // 1. 한글/특수문자 제거 시도 (영어 제목일 경우)
+        // 영문/숫자만 남기고 다 - 로 변경
         let tempSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-        
-        // 2. 만약 한글이라서 다 지워졌다면? -> 그냥 'post-날짜' (어쩔 수 없음)
-        if (tempSlug.length < 2) {
-             tempSlug = `post-${dateStr.replace(/-/g, '')}`;
-        }
-        
+        // 만약 한글이라 다 지워졌으면 그냥 날짜+랜덤숫자 사용
+        if (tempSlug.length < 2) tempSlug = `post-${dateStr.replace(/-/g, '')}-${Math.floor(Math.random() * 1000)}`;
         slug = tempSlug;
-        console.warn(`⚠️ AI 실패. 제목 기반 Slug 사용: ${slug}`);
+        console.warn(`⚠️ AI 실패. 임시 Slug 사용: ${slug}`);
       }
 
       // 이미지 처리
@@ -170,7 +168,6 @@ async function main() {
 
       const finalContent = `---\n${yaml.dump(frontMatter)}---\n\n${newMdString}`;
       
-      // 파일 저장 (Slug 적용)
       const fileName = `${dateStr}-${slug}.md`;
       const filePath = path.join(__dirname, "_posts", fileName);
       
