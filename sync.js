@@ -1,4 +1,4 @@
-// sync.js (AI 수정 + 파일명 완벽 적용 + 오류 방지 버전)
+// sync.js (최종 완성: AI 1.5-flash 적용 + 제목 기반 Slug)
 const { Client } = require("@notionhq/client");
 const { NotionToMarkdown } = require("notion-to-md");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -19,7 +19,6 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 const IMAGE_DIR = "assets/post-img";
 
-// 이미지 다운로드 함수
 async function downloadImage(url, filename) {
   const filepath = path.resolve(__dirname, IMAGE_DIR, filename);
   if (!fs.existsSync(path.dirname(filepath))) fs.mkdirSync(path.dirname(filepath), { recursive: true });
@@ -32,31 +31,27 @@ async function downloadImage(url, filename) {
   });
 }
 
-// [핵심] AI 요약 및 Slug 생성 함수 (gemini-pro 사용)
-async function getAiMetadata(content) {
+// [수정] AI 모델 변경 (gemini-1.5-flash)
+async function getAiMetadata(content, title) {
   try {
-    // 1.5-flash 대신 안정적인 'gemini-pro' 사용
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = `
-      You are an SEO expert. Analyze the provided markdown content.
+      You are an SEO expert. 
+      Task: Create a URL slug and a summary based on the content below.
       
-      Tasks:
-      1. Create a URL slug in English (lowercase, hyphens only, remove special chars).
-      2. Write a 2-sentence summary in Korean.
+      1. Slug: Translate the title "${title}" into English if needed. Use lowercase, hyphens only. No special chars. (e.g., "why-python-is-interpreted")
+      2. Summary: 2-sentence summary in Korean.
 
-      Output Format (JSON ONLY):
-      { "slug": "your-slug-here", "summary": "한국어 요약" }
+      Output JSON ONLY:
+      { "slug": "english-slug-here", "summary": "한국어 요약" }
 
-      --- Content ---
-      ${content.substring(0, 3000)}
+      Content: ${content.substring(0, 1000)}
     `;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    
-    // JSON 파싱 (마크다운 기호 제거)
     const jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
     return JSON.parse(jsonString);
   } catch (error) {
@@ -88,51 +83,56 @@ async function main() {
       const pageId = page.id;
       const props = page.properties;
       
-      // 1. 기본 정보 추출 (안전하게)
       const titleProp = props.Name || props.이름 || props.제목;
       const title = titleProp?.title?.[0]?.plain_text || "No Title";
       const dateStr = props.Date?.date?.start || new Date().toISOString().split('T')[0];
       
-      // 기존 Slug, Summary 확인
       let slug = props.Slug?.rich_text?.[0]?.plain_text || "";
       let summary = props.Summary?.rich_text?.[0]?.plain_text || "";
 
       console.log(`Processing: [${title}]`);
 
-      // 2. 본문 변환
       const mdBlocks = await n2m.pageToMarkdown(pageId);
       let mdString = n2m.toMarkdownString(mdBlocks).parent;
 
-      // 3. AI 자동 생성 (Slug나 Summary가 비어있을 때만)
+      // [AI] Slug/Summary 생성
       if (!slug || !summary) {
-        console.log("🤖 AI가 내용을 분석 중입니다...");
-        const aiResult = await getAiMetadata(mdString);
+        console.log("🤖 AI가 Slug와 Summary 생성 시도 (Model: gemini-1.5-flash)...");
+        const aiResult = await getAiMetadata(mdString, title);
         
         if (aiResult) {
             if (!slug) slug = aiResult.slug;
             if (!summary) summary = aiResult.summary;
-            
-            console.log(`   👉 Generated Slug: ${slug}`);
-            console.log(`   👉 Generated Summary: ${summary}`);
+            console.log(`   👉 AI 성공: Slug=[${slug}]`);
 
-            // [중요] 생성된 값을 노션에 다시 저장 (그래야 나중에 봄)
-            await notion.pages.update({
-                page_id: pageId,
-                properties: {
-                    "Slug": { rich_text: [{ text: { content: slug } }] },
-                    "Summary": { rich_text: [{ text: { content: summary } }] }
-                }
-            });
+            // 노션 업데이트
+            try {
+                await notion.pages.update({
+                    page_id: pageId,
+                    properties: {
+                        "Slug": { rich_text: [{ text: { content: slug } }] },
+                        "Summary": { rich_text: [{ text: { content: summary } }] }
+                    }
+                });
+            } catch (err) { console.error("   ⚠️ 노션 저장 실패:", err.message); }
         }
       }
 
-      // [비상 대책] AI가 실패해서 여전히 Slug가 없으면 -> '날짜-랜덤숫자'로 설정 (제목 사용 X)
+      // [수정] AI 실패 시 "제목" 기반으로 Slug 생성 (숫자 X)
       if (!slug) {
-        slug = `${dateStr.replace(/-/g, '')}-${Math.floor(Math.random() * 1000)}`;
-        console.warn(`⚠️ Slug 생성 실패. 임시 Slug 사용: ${slug}`);
+        // 1. 한글/특수문자 제거 시도 (영어 제목일 경우)
+        let tempSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        
+        // 2. 만약 한글이라서 다 지워졌다면? -> 그냥 'post-날짜' (어쩔 수 없음)
+        if (tempSlug.length < 2) {
+             tempSlug = `post-${dateStr.replace(/-/g, '')}`;
+        }
+        
+        slug = tempSlug;
+        console.warn(`⚠️ AI 실패. 제목 기반 Slug 사용: ${slug}`);
       }
 
-      // 4. 이미지 처리
+      // 이미지 처리
       const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
       let match;
       let newMdString = mdString;
@@ -148,14 +148,12 @@ async function main() {
         }
       }
 
-      // 5. 카테고리 & 태그 처리 (에러 방지 코드 추가)
+      // Front Matter
       const categoryProp = props.Category || props.Categories || props.카테고리;
-      const category = categoryProp?.select?.name || "General"; // 없으면 General
-      
+      const category = categoryProp?.select?.name || "General";
       const tagsProp = props.Tags || props.태그;
       const tags = tagsProp?.multi_select ? tagsProp.multi_select.map(t => t.name) : [];
 
-      // 6. 파일 저장
       const frontMatter = {
         title: title,
         date: `${dateStr} 00:00:00 +0900`,
@@ -172,15 +170,15 @@ async function main() {
 
       const finalContent = `---\n${yaml.dump(frontMatter)}---\n\n${newMdString}`;
       
-      // [핵심] 파일명에 Slug 적용!
+      // 파일 저장 (Slug 적용)
       const fileName = `${dateStr}-${slug}.md`;
       const filePath = path.join(__dirname, "_posts", fileName);
       
       if (!fs.existsSync(path.dirname(filePath))) fs.mkdirSync(path.dirname(filePath), { recursive: true });
       fs.writeFileSync(filePath, finalContent);
-      console.log(`✅ 파일 저장 완료: ${fileName}`);
+      console.log(`✅ 파일 생성 완료: ${fileName}`);
 
-      // 7. 상태 업데이트
+      // 상태 업데이트
       if (props.Status) {
         await notion.pages.update({
           page_id: pageId,
