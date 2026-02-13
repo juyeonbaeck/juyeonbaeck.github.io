@@ -187,6 +187,6 @@ async function main() {
   } catch (error) {
     console.error("❌ 치명적 오류:", error);
   }
-}
+} 
 
 main();
