@@ -32,32 +32,36 @@ async function downloadImage(url, filename) {
   });
 }
 
-// [핵심 변경] 모델을 'gemini-pro'로 변경 (404 오류 해결)
 async function getAiMetadata(content, title) {
   try {
-    // 1.5-flash 대신 가장 안정적인 gemini-pro 사용
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // [변경] 모델 이름을 'gemini-1.5-flash'로 고정하고, 
+    // 라이브러리가 알아서 최적의 API 경로를 찾도록 맡깁니다.
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const prompt = `
-      You are an SEO expert. 
-      Task: Create a URL slug and a summary.
-      
-      1. Slug: Convert the title "${title}" into a concise English URL slug. Lowercase, hyphens only. (e.g., "why-python-is-interpreted")
-      2. Summary: 2-sentence summary in Korean.
-
-      Output JSON ONLY:
-      { "slug": "slug-here", "summary": "summary-here" }
-
+      Create a JSON object for a blog post.
+      1. "slug": English URL slug for "${title}" (lowercase, hyphens only).
+      2. "summary": 2-sentence Korean summary.
       Content: ${content.substring(0, 1000)}
     `;
 
-    const result = await model.generateContent(prompt);
+    // generateContent 호출 시 안전하게 응답을 기다림
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+    
     const response = await result.response;
     const text = response.text();
-    const jsonString = text.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(jsonString);
+    
+    // JSON만 추출하는 더 강력한 정규식
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("JSON format not found");
+    
+    return JSON.parse(jsonMatch[0]);
+    
   } catch (error) {
-    console.error(`🤖 AI 생성 실패 (gemini-pro): ${error.message}`);
+    console.error(`🤖 AI 생성 실패: ${error.message}`);
+    // 만약 여기서도 404가 뜨면, 구글 서버가 해당 모델명을 인식 못하는 것입니다.
     return null;
   }
 }
