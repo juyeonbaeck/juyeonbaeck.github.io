@@ -59,10 +59,8 @@ Conncetion con = null;
 - 생성: DriverManager.getConnection(url, id, pw) 메소드로 얻어옴.
 
 - 주의: 연결을 유지하는 데 자원이 많이 소모되므로, 작업이 끝나면 반드시 .close()로 끊어줘야 함
-<div style="display: flex; justify-content: space-between; gap: 10px;">
-    <img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png" width="49%" alt="코드 안에 직접 작성" />
-    <img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_2.png" width="49%" alt="properties 활용" />
-</div>
+<img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_1.png" alt="코드 안에 직접 작성" />
+<img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_2.png" alt="properties 활용" />
 
 ### 2-2. **Statement** (운반 트럭)
 - 역할: 연결된 통로(Connection)를 통해 SQL 문(쿼리)을 DB에 전달하고, 실행 결과를 받아오는 객체
@@ -79,10 +77,11 @@ Conncetion con = null;
     - **커서(Cursor)**라는 것을 사용하여 데이터의 행(Row)을 하나씩 가리킴
     - .next() 메소드를 호출할 때마다 커서가 다음 줄로 이동하며 데이터를 읽음
     - (INSERT, UPDATE, DELETE는 결과가 데이터가 아니라 '몇 개 바뀌었는지' 숫자(int)로 나오므로 ResultSet을 쓰지 않음 ! => **SELECT에 사용**!)
+    <img src="https://juyeonbaeck.github.io/assets/img/2026-01-12/Java_PreparedStatement_3.png" alt="ResultSet의 next()" />
 
 ---
 ## 3. `Statement` 와 `PreparedStatement` 차이
-1. 기존 방식인 `Statement` 
+### 1. 기존 방식인 **`Statement`** 
 : 완성된 SQL 문자열을 통째로 DB에 전송
 
 - 단점 1 (가독성)
@@ -99,7 +98,7 @@ rs = stmt.executeQuery(sql);
 ```
 {: file="StatementDAO.java" }
 
-2. 개선된 방식인 `PreparedStatement`
+### 2. 개선된 방식인 **`PreparedStatement`**
 : SQL 문장의 틀(골격)을 먼저 컴파일해두고, 실행 시에 **값(Value)**만 바꿔 끼워 넣는 방식
 
 - 장점 1 (가독성): 복잡한 따옴표(') 처리 없음
@@ -124,14 +123,13 @@ rs = pstmt.executeQuery();
 {: file="PreparedStatementDAO.java" }
 
 ---
-## 4. DAO 란? - Data Access Object
-: 데이터베이스에 접근하여 데이터를 조회하거나 조작(CRUD)하는 기능을 전담하는 **객체**
+## 4. DAO 란?
+: 데이터베이스에 접근하여 데이터를 조회하거나 조작(CRUD)하는 기능을 전담하는 **객체** (Data Access Object)
 - 목적: 메인 비즈니스 로직(Controller)과 지저분한 SQL 처리 로직을 분리하기 위해 사용
 
 ### 4-1. 짝꿍: DTO (Data Transfer Object)
 - DAO가 창고지기(동작, Method) 라면,
     DTO는 데이터를 담아 나르는 **이삿짐 박스(Data, Variable)** (VO 라고도 부름)
-
 - DB에서 꺼낸 데이터를 자바 객체(DeptDTO)에 담아서 메인 프로그램으로 리턴해줌
 
 
@@ -146,9 +144,9 @@ package model.domain;
 
 // DeptDTO : 부서 테이블(dept)의 1개의 행(row) 데이터를 담는 그릇
 public class DeptDTO {
-    private int deptno;     // department no
-    private String dname;   // department name
-    private String loc;     //location
+    private int deptno; 
+    private String dname;
+    private String loc;
 }
 
 // 기본 생성자 (No-args Constructor)
@@ -167,18 +165,12 @@ public DeptDTO(int deptno, String dname, String loc) {
     this.loc = loc;
 }
 
-@Getter             //
-@Setter             //
-@AllArgsConstructor //
-@NoArgsConstructor  //
-@ToString           //
 ```
 {: file="DeptDTO.java" }
 
 
 ```java
 package model.dao;
-
 
 public class DeptDAO {
     // 1. 데이터 삽입 (INSERT) - 결과가 '몇 건 처리됨(int)'으로 출력
@@ -194,20 +186,71 @@ public class DeptDAO {
 
             pstmt = con.preparedStatement(sql);
 
-            //물음표 부분 채우기
+            //물음표 부분 채우기 (DTO 박스에서 꺼내서 넣기)
+            pstmt.setInt(1, deptdto.getDeptno());
+            pstmt.setString(2, deptdto.getDname());
+            pstmt.setString(3, deptdto.getLoc());
 
+            // 실행 (INSERT, DELETE, UPDATE [DML]는 executeUpdate로 실행)
+            int count = pstmt.executeUpdate();
 
+            if (count > 0) {
+                result = true;
+            }
         } finally {
-
+            DBUtil.close(con, pstmt);
         }
+        return result;
+    }
 
+    // 2. 전체 조회 (SELECT) - 결과가 '데이터 목록(ArrayList)'로 나옴
+    public ArrayList<DeptDTO> getAllDepts() {
+
+        // 연결 객체, 반환 객체 초기화
+        Connection con = null;
+        PreparedStatement pstmt= null;
+        ResultSet rs = null;
+        ArrayList<DeptDTO> selectList = new Arraylist<>();
+
+        try {
+            con = DBUtil.getConnection();
+            String sql = "SELECT * FROM dept ORDER BY deptno ASC";
+            pstmt = con.preparedStatement(sql);
+
+            // 실행 (SELECT -> executeQuery 사용!)
+            rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                // DB에서 꺼낸 데이터를 DTO 박스에 포장
+                DeptDTO deptdto = new DeptDTO(
+                    rs.getInt("deptno"),
+                    rs.getString("dname"),
+                    rs.getString("loc")
+                );
+                //리스트에 추가
+                selectList.add(deptdto);
+            }
+        }finally {
+            DBUtil.close(con, pstmt, rs);
+        }
+        return selectList;
     }
 }
 ```
 {: file="DeptDAO.java" }
 
+```java
+package util;   
+
+public class DBUtil {
+
+}
+```
+{: file="DBUtil.java "}
+
 > [!INFO]
 > **Change Log**
 > - 2026-01-12: 최초 작성
 > - 2026-01-12: 코드 수정
+> - 2026-01-13: 최종 수정
 {: .prompt-info }

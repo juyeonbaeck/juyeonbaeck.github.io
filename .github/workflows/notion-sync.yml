@@ -1,0 +1,33 @@
+name: Notion to Blog Sync
+
+on:
+  workflow_dispatch: # 수동 실행 버튼 (테스트용)
+  schedule:
+    - cron: '0 0 * * *' # 매일 자정에 자동 실행 (필요하면 시간 수정)
+
+jobs:
+  sync-post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Sync Script
+        env:
+          NOTION_KEY: ${{ secrets.NOTION_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: node sync.js
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "📝 Sync posts from Notion"
+          branch: main # 혹은 master (본인 브랜치명 확인!)
