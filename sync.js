@@ -17,7 +17,7 @@ const notion = new Client({ auth: NOTION_KEY });
 const n2m = new NotionToMarkdown({ notionClient: notion });
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-const IMAGE_DIR = "assets/img/posts";
+const IMAGE_DIR = "assets/post-img/posts";
 
 async function downloadImage(url, filename) {
   const filepath = path.resolve(__dirname, IMAGE_DIR, filename);
