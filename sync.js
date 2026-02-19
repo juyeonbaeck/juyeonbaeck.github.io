@@ -161,8 +161,15 @@ async function main() {
       }
 
       // Front Matter
+
+      // 1. 카테고리 (Select 속성) 가져오기
+      // 노션 속성 이름이 Category, Categories, 카테고리 중 하나면 인식함
       const categoryProp = props.Category || props.Categories || props.카테고리;
-      const category = categoryProp?.select?.name || "General";
+      const category = categoryProp?.select ? categoryProp.select.name : "General"; 
+      // (값이 없으면 "General"로 자동 설정)
+
+      // 2. 태그 (Multi-select 속성) 가져오기
+      // 노션 속성 이름이 Tags, 태그 중 하나면 인식함
       const tagsProp = props.Tags || props.태그;
       const tags = tagsProp?.multi_select ? tagsProp.multi_select.map(t => t.name) : [];
 
